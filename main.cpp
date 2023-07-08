@@ -75,7 +75,9 @@ void help()
 void generate(string file_path, int row_count, int col_count)
 {
 	csv_table data(col_count, row_count);
-	string* cols = data.Get_Columns();
-	int* rows = data.Get_Rows();
+	/*
 	data.Save(file_path);
+	*/
+	data.Load(file_path);
+	data.Print();
 }

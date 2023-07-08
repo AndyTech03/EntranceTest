@@ -1,5 +1,20 @@
 #include "csv_table.h"
 
+exception csv_table::_csv_exception(string message, int row, int col)
+{
+    if (row != -1)
+        message += "\nСтрока: " + to_string(row);
+    if (col != -1)
+        message += "\nСтолбец: " + to_string(col);
+
+    return exception(message.c_str());
+}
+
+string csv_table::_get_cel_address(int row, int col)
+{
+    return _cols[col] + _rows[row];
+}
+
 csv_table::csv_table()
 {
     _rows = new string[0];
@@ -42,32 +57,54 @@ csv_table::csv_table(int columns_count, int rows_count)
         _cols[col] = (char)(num + 'A' -1) + _cols[col];
     }
 
-
-    const int operators_count = 4;
-    const char operators[operators_count] = { '+', '-', '/', '*' };
-
     for (int row = 0; row < _rows_count; row++)
         for (int col = 0; col < _cols_count; col++)
         {
-            string address = _cols[col] + _rows[row];
-            int state = rand() % 3;
-            string data = "=";
+            string address = _get_cel_address(row, col);
+            int state = rand() % 6;
+            int num = rand() % 1000 - 500;
+            int num1 = rand() % 1000 - 500;
+            char op = operators[rand() % operators_count];
             switch (state)
             {
             case 1:
-            {
-                char op = operators[rand() % operators_count];
-                data += _cols[rand() % _cols_count] + _rows[rand() % _rows_count] + op;
-            }
-            case 2:
-                data += _cols[rand() % _cols_count] + _rows[rand() % _rows_count];
-                _data.insert(string_Pair(address, data));
+                _data.insert(string_Pair(address, "=" + to_string(num % 20)));
                 break;
-
+            case 2:
+                _data.insert(string_Pair(address, to_string(num % 20)));
+                break;
+            case 3:
+                _data.insert(string_Pair(address, "=" + to_string(num % 20) + op + to_string(num1 % 20)));
+                break;
+            case 4:
+                _data.insert(string_Pair(address, "=" + to_string(num) + op + to_string(num1)));
+                break;
+            case 5:
+                _data.insert(string_Pair(address, "=" + to_string(num)));
+                break;
             default:
-                _data.insert(string_Pair(address, to_string(rand() % 1000)));
+                _data.insert(string_Pair(address, to_string(num)));
             }
         }
+}
+
+void csv_table::Print()
+{
+    const int data_widht = 15;
+    const int head_width = 4;
+    cout << left << setw(head_width) << "";
+    for (int col = 0; col < _cols_count; col++)
+        cout << setw(data_widht) << _cols[col];
+    cout << endl;
+
+    for (int row = 0; row < _rows_count; row++)
+    {
+        cout << setw(head_width) << _rows[row];
+        for (int col = 0; col < _cols_count; col++)
+            cout << setw(data_widht) << _data.at(_get_cel_address(row, col));
+        cout << endl;
+    }
+            
 }
 
 void csv_table::Save(string file_path)
@@ -86,7 +123,7 @@ void csv_table::Save(string file_path)
         file << _rows[row] << ',';
         for (int col = 0; col < _cols_count; col++)
         {
-            string address = _cols[col] + _rows[row];
+            string address = _get_cel_address(row, col);
             file << _data.at(address);
             if (col < _cols_count - 1)
                 file << ',';
@@ -94,6 +131,75 @@ void csv_table::Save(string file_path)
         if (row < _rows_count - 1)
             file << endl;
     }
+}
+
+void csv_table::Load(string file_path)
+{
+    string line;
+    int size = 0;
+
+    // Get file rows count
+    ifstream file(file_path);
+    delete[] _rows;
+    while (file >> line)
+        size++;
+    _rows_count = size - 1;
+    _rows = new string[_rows_count];
+    size = 0;
+
+    // Read table head and get table cols count
+    file = ifstream(file_path);
+    delete[] _cols;
+    getline(file, line);
+    string* head = Split_Line(line, size);
+    _cols_count = size - 1;
+    _cols = new string[_cols_count];
+    // Copy head titles
+    for (int i = 1; i < size; i++)
+        _cols[i - 1] = head[i];
+    delete[] head;
+
+    // read data rows
+    _data.clear();
+    int row_number = 1;
+    for (; getline(file, line); row_number++)
+    {
+        int s;
+        string* cells = Split_Line(line, s);
+        if (s != size)
+            throw _csv_exception("Число ячеек не совпадает!", row_number);
+
+        _rows[row_number - 1] = cells[0];
+        for (int col = 1; col < size; col++)
+        {
+            _data.insert(string_Pair(_get_cel_address(row_number - 1, col-1), cells[col]));
+        }
+    }
+}
+
+void csv_table::Generate_Graph(int lenght, int max_width)
+{
+}
+
+string* csv_table::Split_Line(string line, int& size)
+{
+    const char sep = ',';
+    size = count(line.begin(), line.end(), sep)+1;
+    string* result = new string[size];
+    int start = 0, end = 0;
+    for (int i = 0; i < size; i++)
+    {
+        if (line[end] == sep)
+        {
+            end++;
+            continue;
+        }
+        start = end;
+        end = line.find(sep, start);
+        result[i] = line.substr(start, end - start);
+        end++;
+    }
+    return result;
 }
 
 int* csv_table::Get_Rows()
