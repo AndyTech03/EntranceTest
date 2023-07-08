@@ -68,22 +68,22 @@ csv_table::csv_table(int columns_count, int rows_count)
             switch (state)
             {
             case 1:
-                _data.insert(string_Pair(address, "=" + to_string(num % 20)));
+                _data.insert(Table_Pair(address, "=" + to_string(num % 20)));
                 break;
             case 2:
-                _data.insert(string_Pair(address, to_string(num % 20)));
+                _data.insert(Table_Pair(address, to_string(num % 20)));
                 break;
             case 3:
-                _data.insert(string_Pair(address, "=" + to_string(num % 20) + op + to_string(num1 % 20)));
+                _data.insert(Table_Pair(address, "=" + to_string(num % 20) + op + to_string(num1 % 20)));
                 break;
             case 4:
-                _data.insert(string_Pair(address, "=" + to_string(num) + op + to_string(num1)));
+                _data.insert(Table_Pair(address, "=" + to_string(num) + op + to_string(num1)));
                 break;
             case 5:
-                _data.insert(string_Pair(address, "=" + to_string(num)));
+                _data.insert(Table_Pair(address, "=" + to_string(num)));
                 break;
             default:
-                _data.insert(string_Pair(address, to_string(num)));
+                _data.insert(Table_Pair(address, to_string(num)));
             }
         }
 }
@@ -172,13 +172,44 @@ void csv_table::Load(string file_path)
         _rows[row_number - 1] = cells[0];
         for (int col = 1; col < size; col++)
         {
-            _data.insert(string_Pair(_get_cel_address(row_number - 1, col-1), cells[col]));
+            _data.insert(Table_Pair(_get_cel_address(row_number - 1, col-1), cells[col]));
         }
     }
 }
 
 void csv_table::Generate_Graph(int lenght, int max_width)
 {
+    csv_nodes nodes;
+    vector<string> parents;
+    vector<string> children;
+
+    nodes.Add("A1");
+
+    parents.push_back("A1");
+    nodes.Add("A2", parents, children);
+    parents.clear();
+
+    parents.push_back("A2");
+    nodes.Add("A3", parents, children);
+    parents.clear();
+
+    parents.push_back("A1");
+    children.push_back("A2");
+    nodes.Add("B1", parents, children);
+    children.clear();
+    parents.clear();
+
+    parents.push_back("B1");
+    children.push_back("A3");
+    nodes.Add("B2", parents, children);
+    children.clear();
+    parents.clear();
+
+    for (string paretn : nodes.Get_Parents("A3"))
+    cout << paretn << '\t';
+    cout << endl;
+
+    _node_groups.push_back(nodes);
 }
 
 string* csv_table::Split_Line(string line, int& size)

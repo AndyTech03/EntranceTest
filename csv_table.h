@@ -1,16 +1,20 @@
 #pragma once
 #include <map>
+#include <unordered_map>
+#include <vector>
 #include <iostream>
 #include <fstream>
 #include <string>
 #include <random>
 #include <iomanip>
+#include "csv_nodes.h"
 
 using namespace std;
-typedef pair <string, string> string_Pair;
+typedef pair <string, string> Table_Pair;
 class csv_table
 {
 private:
+	vector<csv_nodes> _node_groups;
 	map<string, string> _data;
 	string* _rows;
 	string* _cols;
