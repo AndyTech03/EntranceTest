@@ -128,12 +128,14 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="csv_cell.cpp" />
     <ClCompile Include="csv_node.cpp" />
     <ClCompile Include="csv_nodes.cpp" />
     <ClCompile Include="csv_table.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="csv_cell.h" />
     <ClInclude Include="csv_node.h" />
     <ClInclude Include="csv_nodes.h" />
     <ClInclude Include="csv_table.h" />

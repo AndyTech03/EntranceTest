@@ -179,3 +179,13 @@ vector<string> csv_nodes::Get_Parents(string node)
 	return parents;
 }
 
+vector<string> csv_nodes::Get_Contained()
+{
+	vector<string> nodes;
+
+	for (Nodes_Pair pair : _nodes)
+		nodes.push_back(pair.first);
+
+	return nodes;
+}
+

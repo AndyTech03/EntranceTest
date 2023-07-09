@@ -26,6 +26,10 @@ void csv_table::_extend_graph(string nodeA, string nodeB, csv_nodes& group)
     group.Add(nodeA, nodeB);
 }
 
+void csv_table::_generation_step(int depth, const int max_depth, const int max_children, unordered_map<string, string> allowed, csv_nodes& group)
+{
+}
+
 exception csv_table::_csv_exception(string message, int row, int col)
 {
     if (row != -1)
@@ -42,49 +46,38 @@ string csv_table::_get_cel_address(int row, int col)
 }
 
 csv_table::csv_table()
+{}
+
+csv_table::csv_table(const int columns_count, const int rows_count)
 {
-    _rows = new string[0];
-    _cols = new string[0];
-    _rows_count = _cols_count = 0;
-    _data = map<string, string>();
-}
-
-csv_table::csv_table(int columns_count, int rows_count)
-{
-
-    _rows_count = rows_count;
-    _cols_count = columns_count;
-
-    _rows = new string[_rows_count];
-    _cols = new string[_cols_count];
-
-    for (int row = 0; row < _rows_count; row++)
-        _rows[row] = to_string(row + 1);
+    for (int row = 0; row < rows_count; row++)
+        _rows.push_back(to_string(row + 1));
 
     const int letters_count = 26;
 
-    for (int col = 0; col < _cols_count; col++)
+    for (int col = 0; col < columns_count; col++)
     {
         int num = col+1;
+        string label;
         while (num > letters_count)
         {
             int index = num % letters_count;
             if (index == 0)
             {
-                _cols[col] = 'Z' + _cols[col];
+                label = 'Z' + label;
                 num = num / letters_count - 1;
             }
             else
             {
-                _cols[col] = (char)(index + 'A' -1) + _cols[col];
+                label = (char)(index + 'A' -1) + label;
                 num = num / letters_count;
             }
         }
-        _cols[col] = (char)(num + 'A' -1) + _cols[col];
+        _cols.push_back((char)(num + 'A' -1) + label);
     }
 
-    for (int row = 0; row < _rows_count; row++)
-        for (int col = 0; col < _cols_count; col++)
+    for (int row = 0; row < rows_count; row++)
+        for (int col = 0; col < columns_count; col++)
         {
             string address = _get_cel_address(row, col);
             int state = rand() % 6;
@@ -116,17 +109,20 @@ csv_table::csv_table(int columns_count, int rows_count)
 
 void csv_table::Print()
 {
+    const int rows_count = Get_RowsCount();
+    const int cols_count = Get_ColumsCount();
+
     const int data_widht = 15;
     const int head_width = 4;
     cout << left << setw(head_width) << "";
-    for (int col = 0; col < _cols_count; col++)
+    for (int col = 0; col < cols_count; col++)
         cout << setw(data_widht) << _cols[col];
     cout << endl;
 
-    for (int row = 0; row < _rows_count; row++)
+    for (int row = 0; row < rows_count; row++)
     {
         cout << setw(head_width) << _rows[row];
-        for (int col = 0; col < _cols_count; col++)
+        for (int col = 0; col < cols_count; col++)
             cout << setw(data_widht) << _data.at(_get_cel_address(row, col));
         cout << endl;
     }
@@ -135,26 +131,29 @@ void csv_table::Print()
 
 void csv_table::Save(string file_path)
 {
+    const int rows_count = Get_RowsCount();
+    const int cols_count = Get_ColumsCount();
+
     ofstream file(file_path);
     string head;
-    for (int col = 0; col < _cols_count; col++)
+    for (int col = 0; col < cols_count; col++)
     {
-        if (col < _cols_count)
+        if (col < cols_count)
             head += ",";
         head += _cols[col];
     }
     file << head << endl;
-    for (int row = 0; row < _rows_count; row++)
+    for (int row = 0; row < rows_count; row++)
     {
         file << _rows[row] << ',';
-        for (int col = 0; col < _cols_count; col++)
+        for (int col = 0; col < cols_count; col++)
         {
             string address = _get_cel_address(row, col);
             file << _data.at(address);
-            if (col < _cols_count - 1)
+            if (col < cols_count - 1)
                 file << ',';
         }
-        if (row < _rows_count - 1)
+        if (row < rows_count - 1)
             file << endl;
     }
 }
@@ -162,117 +161,94 @@ void csv_table::Save(string file_path)
 void csv_table::Load(string file_path)
 {
     string line;
-    int size = 0;
 
-    // Get file rows count
+    _rows.clear();
+    _cols.clear();
+
     ifstream file(file_path);
-    delete[] _rows;
-    while (file >> line)
-        size++;
-    _rows_count = size - 1;
-    _rows = new string[_rows_count];
-    size = 0;
 
-    // Read table head and get table cols count
-    file = ifstream(file_path);
-    delete[] _cols;
+    // Read table head
     getline(file, line);
-    string* head = Split_Line(line, size);
-    _cols_count = size - 1;
-    _cols = new string[_cols_count];
-    // Copy head titles
-    for (int i = 1; i < size; i++)
-        _cols[i - 1] = head[i];
-    delete[] head;
+    vector<string> head = Split_Line(line);
+    _cols = vector<string>(head.begin() + 1, head.end());
+    const int file_col_count = head.size();
 
     // read data rows
     _data.clear();
     int row_number = 1;
     for (; getline(file, line); row_number++)
     {
-        int s;
-        string* cells = Split_Line(line, s);
-        if (s != size)
+        vector<string> cells = Split_Line(line);
+        if (cells.size() != file_col_count)
             throw _csv_exception("„исло €чеек не совпадает!", row_number);
 
-        _rows[row_number - 1] = cells[0];
-        for (int col = 1; col < size; col++)
+        _rows.push_back(cells[0]);
+        for (int col = 1; col < file_col_count; col++)
         {
             _data.insert(Table_Pair(_get_cel_address(row_number - 1, col-1), cells[col]));
         }
     }
 }
 
-void csv_table::Generate_Graph(int lenght, int max_width)
+void csv_table::Generate_Graph(int max_depth, int max_children, bool avoid_others)
 {
-    csv_nodes graphA;
-    csv_nodes graphB;
-    graphA.Add("A1");
-    _extend_graph("A1", "A2", graphA);
-    _extend_graph("A2", "A3", graphA);
-    _extend_graph("A3", "A1", graphA);
-
-    _node_groups.push_back(graphA);
-
-    graphB.Add("B1");
-    _extend_graph("B1", "B2", graphB);
-    _extend_graph("B2", "B3", graphB);
-
-    _extend_graph("B2", "A2", graphB);
-
-    _node_groups.push_back(graphB);
+    /*
+    unordered_map<string, string> allowed;
+    if (avoid_others)
+        for (csv_nodes group: _node_groups)
+            for (string node : group.Get_Contained())
+                allowed.insert()
+    string start = _cols[rand() % _cols_count] + _rows[rand() % _rows_count];
     cout << "OK!" << endl;
+    */
 }
 
-string* csv_table::Split_Line(string line, int& size)
+vector<string> csv_table::Split_Line(string line)
 {
     const char sep = ',';
-    size = count(line.begin(), line.end(), sep)+1;
-    string* result = new string[size];
-    int start = 0, end = 0;
-    for (int i = 0; i < size; i++)
+    vector<string> result;
+    string label;
+    for (char c : line)
     {
-        if (line[end] == sep)
+        if (c == sep)
         {
-            end++;
-            continue;
+            result.push_back(label);
+            label = "";
         }
-        start = end;
-        end = line.find(sep, start);
-        result[i] = line.substr(start, end - start);
-        end++;
+        else
+            label += c;
     }
     return result;
 }
 
-int* csv_table::Get_Rows()
+vector<int> csv_table::Get_Rows()
 {
-    int* result = new int[_rows_count];
-    for (int i = 0; i < _rows_count; i++)
+    vector<int> result;
+    for (string row : _rows)
     {
-        result[i] = stoi(_rows[i]);
+        result.push_back(stoi(row));
     }
     return result;
 }
 
-string* csv_table::Get_Columns()
+vector<string> csv_table::Get_Columns()
 {
-    string* result = new string[_cols_count];
-    for (int i = 0; i < _cols_count; i++)
+    vector<string> result;
+    for (string col : _cols)
     {
-        result[i] = _cols[i];
+        result.push_back(col);
     }
     return result;
 }
 
 int csv_table::Get_RowsCount()
 {
-    return _rows_count;
+    return _rows.size();
 }
 
 int csv_table::Get_ColumsCount()
 {
-    return _cols_count;
+    return _cols.size();
 }
 
 string csv_table::Get_Data(int row, string column)

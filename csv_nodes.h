@@ -26,5 +26,6 @@ public:
 
 	vector<string> Get_Children(string node);
 	vector<string> Get_Parents(string node);
+	vector<string> Get_Contained();
 };
 
