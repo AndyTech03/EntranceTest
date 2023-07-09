@@ -15,6 +15,8 @@ class csv_table
 {
 private:
 	vector<csv_nodes> _node_groups;
+	void _extend_graph(string nodeA, string nodeB, csv_nodes& group);
+
 	map<string, string> _data;
 	string* _rows;
 	string* _cols;

@@ -1,5 +1,31 @@
 #include "csv_table.h"
 
+void csv_table::_extend_graph(string nodeA, string nodeB, csv_nodes& group)
+{
+    // nodeA должен присутствовать в group
+    if (group.Contains(nodeA) == false)
+        throw "Узел отсутствует!";
+
+    // nodeBИ должен отсутствовать в group
+    // Используйте метод Connect!
+    if (group.Contains(nodeB))
+        throw "Уже записано!";
+
+    // Если относится к другому графу - объединяем
+    // А второй граф удаляется
+    for (vector<csv_nodes>::iterator iter = _node_groups.begin(); iter != _node_groups.end(); iter++)
+        if (iter->Contains(nodeB))
+        {
+            group.Union(nodeA, nodeB, *iter);
+            _node_groups.erase(iter);
+            cout << "Объединение графов!" << endl;
+            return;
+        }
+
+    // Иначе просто добавляем новый узел
+    group.Add(nodeA, nodeB);
+}
+
 exception csv_table::_csv_exception(string message, int row, int col)
 {
     if (row != -1)
@@ -179,37 +205,23 @@ void csv_table::Load(string file_path)
 
 void csv_table::Generate_Graph(int lenght, int max_width)
 {
-    csv_nodes nodes;
-    vector<string> parents;
-    vector<string> children;
+    csv_nodes graphA;
+    csv_nodes graphB;
+    graphA.Add("A1");
+    _extend_graph("A1", "A2", graphA);
+    _extend_graph("A2", "A3", graphA);
+    _extend_graph("A3", "A1", graphA);
 
-    nodes.Add("A1");
+    _node_groups.push_back(graphA);
 
-    parents.push_back("A1");
-    nodes.Add("A2", parents, children);
-    parents.clear();
+    graphB.Add("B1");
+    _extend_graph("B1", "B2", graphB);
+    _extend_graph("B2", "B3", graphB);
 
-    parents.push_back("A2");
-    nodes.Add("A3", parents, children);
-    parents.clear();
+    _extend_graph("B2", "A2", graphB);
 
-    parents.push_back("A1");
-    children.push_back("A2");
-    nodes.Add("B1", parents, children);
-    children.clear();
-    parents.clear();
-
-    parents.push_back("B1");
-    children.push_back("A3");
-    nodes.Add("B2", parents, children);
-    children.clear();
-    parents.clear();
-
-    for (string paretn : nodes.Get_Parents("A3"))
-    cout << paretn << '\t';
-    cout << endl;
-
-    _node_groups.push_back(nodes);
+    _node_groups.push_back(graphB);
+    cout << "OK!" << endl;
 }
 
 string* csv_table::Split_Line(string line, int& size)

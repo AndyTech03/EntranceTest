@@ -16,7 +16,9 @@ private:
 public:
 	void Clear();
 	void Add(string node);
-	void Add(string node, vector<string> parents, vector<string> children);
+	void Add(string parent, string node);
+	void Union(string self_node, string other_node, csv_nodes other);
+	void Connect(string nodeA, string nodeB);
 
 	bool Contains(string node);
 	bool Child_To(string node, string parent);
