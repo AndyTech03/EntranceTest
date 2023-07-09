@@ -78,7 +78,7 @@ void generate(string file_path, int row_count, int col_count)
 	/*
 	data.Save(file_path);
 	*/
-	data.Load(file_path);
-	data.Generate_Graph(10, 5);
-	data.Print();
+	//data.Load(file_path);
+	data.Generate_Graph(25, true, true);
+	data.Save("result.csv");
 }

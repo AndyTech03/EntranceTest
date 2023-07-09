@@ -6,10 +6,12 @@ void csv_table::_extend_graph(string nodeA, string nodeB, csv_nodes& group)
     if (group.Contains(nodeA) == false)
         throw "Узел отсутствует!";
 
-    // nodeBИ должен отсутствовать в group
-    // Используйте метод Connect!
+    // Если nodeB присутствует в group соединяем
     if (group.Contains(nodeB))
-        throw "Уже записано!";
+    {
+        group.Connect(nodeA, nodeB);
+        return;
+    }
 
     // Если относится к другому графу - объединяем
     // А второй граф удаляется
@@ -26,9 +28,73 @@ void csv_table::_extend_graph(string nodeA, string nodeB, csv_nodes& group)
     group.Add(nodeA, nodeB);
 }
 
-void csv_table::_generation_step(int depth, const int max_depth, const int max_children, unordered_map<string, string> allowed, csv_nodes& group)
+void csv_table::_generation_step (
+    int depth, const int max_depth, 
+    unordered_map<string, vector<string>> allowed, csv_nodes& group,
+    string parent, bool other_avoiding, bool self_avoiding
+)
 {
+    if (depth >= max_depth)
+        return;
+
+    const int children_count = rand() % 2 + 1;
+    for (int i = 0; i < children_count; i++)
+    {
+        string node;
+        while (true)
+        {
+            if (allowed.size() == 0)
+                return;
+
+            if (other_avoiding)
+            {
+                node = _get_random_allowed_node(allowed);
+                bool is_empty = group.Contains(node) == false;
+
+                if (is_empty == false && self_avoiding)
+                    continue;
+                
+                _extend_graph(parent, node, group);
+                string& data = _data.at(parent);
+                if (i == 0)
+                    data = "=";
+                else
+                    data += operators[rand() % operators_count];
+                data += node;
+                if (is_empty)
+                    _generation_step(
+                        depth + 1, max_depth,
+                        allowed, group, node, other_avoiding, self_avoiding
+                    );
+                break;
+            }
+        }
+    }
 }
+
+string csv_table::_get_random_allowed_node(unordered_map<string, vector<string>>& allowed, bool remove)
+{
+    // Выбор случайного узла
+    auto pair = next(begin(allowed), rand() % allowed.size());
+    string col = pair->first;
+    int index = rand() % pair->second.size();
+    string result = pair->first + pair->second[index];
+
+    if (remove)
+        _remove_from_allowed(col, index, allowed);
+
+    return result;
+}
+
+void csv_table::_remove_from_allowed(string col, int row_id, unordered_map<string, vector<string>>& allowed)
+{
+    vector<string>& row = allowed.at(col);
+    if (row.size() == 1)
+        allowed.erase(col);
+    else
+        row.erase(next(row.begin(), row_id));
+}
+
 
 exception csv_table::_csv_exception(string message, int row, int col)
 {
@@ -142,16 +208,16 @@ void csv_table::Save(string file_path)
             head += ",";
         head += _cols[col];
     }
-    file << head << endl;
+    //file << head << endl;
     for (int row = 0; row < rows_count; row++)
     {
-        file << _rows[row] << ',';
+        //file << _rows[row] << ',';
         for (int col = 0; col < cols_count; col++)
         {
             string address = _get_cel_address(row, col);
             file << _data.at(address);
             if (col < cols_count - 1)
-                file << ',';
+                file << ';';
         }
         if (row < rows_count - 1)
             file << endl;
@@ -190,17 +256,49 @@ void csv_table::Load(string file_path)
     }
 }
 
-void csv_table::Generate_Graph(int max_depth, int max_children, bool avoid_others)
+void csv_table::Generate_Graph(int max_depth, bool avoid_others, bool avoid_self)
 {
-    /*
-    unordered_map<string, string> allowed;
-    if (avoid_others)
-        for (csv_nodes group: _node_groups)
-            for (string node : group.Get_Contained())
-                allowed.insert()
-    string start = _cols[rand() % _cols_count] + _rows[rand() % _rows_count];
-    cout << "OK!" << endl;
-    */
+    // Создание карты доступных узлов
+    unordered_map<string, vector<string>> allowed;
+    for (string col : _cols)
+    {
+        bool first = true;
+        for (string row : _rows)
+        {
+            if (avoid_others)
+            {
+                bool avoid = false;
+                for (csv_nodes group : _node_groups)
+                {
+                    if (group.Contains(col + row))
+                    {
+                        avoid = true;
+                        break;
+                    }
+                }
+                if (avoid)
+                    continue;
+            }
+            if (first)
+            {
+                allowed.insert(Allowed_Pair(col, vector<string>()));
+                first = false;
+            }
+            allowed.at(col).push_back(row);
+        }
+    }
+    if (allowed.size() == 0)
+    {
+        cout << "Нет свободных клеток!";
+        return;
+    }
+
+    csv_nodes group;
+    string start = _get_random_allowed_node(allowed);
+    group.Add(start);
+    _generation_step(1, max_depth, allowed, group, start, avoid_others, avoid_self);
+    _node_groups.push_back(group);
+    cout << group.Get_Contained().size();
 }
 
 vector<string> csv_table::Split_Line(string line)
@@ -217,7 +315,8 @@ vector<string> csv_table::Split_Line(string line)
         }
         else
             label += c;
-    }
+    } 
+    result.push_back(label);
     return result;
 }
 
