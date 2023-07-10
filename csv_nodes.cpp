@@ -1,6 +1,11 @@
 #include "csv_nodes.h"
 
 
+int csv_nodes::Size()
+{
+	return _nodes.size();
+}
+
 void csv_nodes::Clear()
 {
 	_nodes.clear();
@@ -16,6 +21,8 @@ void csv_nodes::Add(string node)
 
 void csv_nodes::Add(string parent, string node)
 {
+	auto start = std::chrono::system_clock::now();
+
 	unordered_set<string> parents_set;
 	unordered_set<string> children_set;
 
@@ -46,6 +53,12 @@ void csv_nodes::Add(string parent, string node)
 	}
 
 	_nodes.insert(Nodes_Pair(node, csv_node(parents_set, children_set)));
+
+	auto end = std::chrono::system_clock::now();
+	std::chrono::duration<double> elapsed_seconds = end - start;
+
+	_func_timeburn.at("Add") += elapsed_seconds.count();
+	_func_calls.at("Add")++;
 }
 
 // По завершению функции оидается удаление other_nodes, её поля не обновляются
@@ -77,20 +90,22 @@ void csv_nodes::Union(string self, string other, csv_nodes other_nodes)
 
 void csv_nodes::Connect(string nodeA, string nodeB)
 {
+	auto start = std::chrono::system_clock::now();
+
 	// Оба узла должны принадлежать графу
 	if (Contains(nodeA) == false)
 		throw "Элемент отсутвует!";
 	if (Contains(nodeB) == false)
 		throw "Элемент отсутвует!";
-
+	
 	csv_node& node_a = _nodes[nodeA];
 	csv_node& node_b = _nodes[nodeB];
-
+	
 	// Узлы не должны иметь циклической связи
 	// Проверку наличия nodeB в родителях node_a пропустим
 	if (node_b.Has_Child(nodeA))
 		throw "Обноружена рекурсия!";
-
+	
 	vector<string> parents = Get_Parents(nodeA);
 	vector<string> children = Get_Children(nodeB);
 
@@ -124,11 +139,27 @@ void csv_nodes::Connect(string nodeA, string nodeB)
 		for (string child : children)
 			parent_node->Children.insert(child);
 	}
+
+	auto end = std::chrono::system_clock::now();
+	std::chrono::duration<double> elapsed_seconds = end - start;
+
+	_func_timeburn.at("Connect") += elapsed_seconds.count();
+	_func_calls.at("Connect")++;
 }
 
 bool csv_nodes::Contains(string node)
 {
-	return _nodes.find(node) != _nodes.end();
+	auto start = std::chrono::system_clock::now();
+
+	bool result = _nodes.find(node) != _nodes.end();
+
+	auto end = std::chrono::system_clock::now();
+	std::chrono::duration<double> elapsed_seconds = end - start;
+
+	_func_timeburn.at("Contains") += elapsed_seconds.count();
+	_func_calls.at("Contains")++;
+
+	return result;
 }
 
 bool csv_nodes::Child_To(string node, string parent)

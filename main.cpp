@@ -1,6 +1,8 @@
 ﻿#include <iostream>
 #include <fstream>
 #include <map>
+#include <chrono>
+#include <ctime>
 #include "csv_table.h"
 
 using namespace std;
@@ -75,10 +77,15 @@ void help()
 void generate(string file_path, int row_count, int col_count)
 {
 	csv_table data(col_count, row_count);
-	/*
-	data.Save(file_path);
-	*/
-	//data.Load(file_path);
-	data.Generate_Graph(25, true, true);
+
+	auto start = chrono::system_clock::now();
+
+	data.Generate_Graph(14, true, true);
+
+	auto end = chrono::system_clock::now();
+	chrono::duration<double> elapsed_seconds = end - start;
+	cout << endl <<"elapsed time: " << elapsed_seconds.count() << "s"
+		<< endl;
+
 	data.Save("result.csv");
 }

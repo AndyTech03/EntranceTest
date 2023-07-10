@@ -7,6 +7,9 @@
 #include <string>
 #include <random>
 #include <iomanip>
+#include <chrono>
+#include <ctime>
+
 #include "csv_nodes.h"
 
 using namespace std;
@@ -15,8 +18,18 @@ typedef pair <string, vector<string>> Allowed_Pair;
 class csv_table
 {
 private:
+	char _sep;
 	vector<csv_nodes> _node_groups;
 	void _extend_graph(string nodeA, string nodeB, csv_nodes& group);
+
+	unordered_map<string, double> _func_timeburn;
+	unordered_map<string, int> _func_calls;
+
+	int _generation_max_count;
+	int _empty_cells_count;
+	string _get_progress(csv_nodes& group);
+
+
 	void _generation_step(
 		int depth, const int max_depth,
 		unordered_map<string, vector<string>> allowed, csv_nodes& group,
@@ -38,10 +51,11 @@ public:
 	csv_table(const int columns_count, const int rows_count);
 	void Print();
 	void Save(string file_path);
+	void Save(string file_path, const char sep);
 	void Load(string file_path);
 
 	void Generate_Graph(int max_depth, bool avoid_others=false, bool avoid_self=false);
-	static vector<string> Split_Line(string line);
+	vector<string> Split_Line(string line);
 
 	vector<int> Get_Rows();
 	vector<string> Get_Columns();

@@ -3,6 +3,9 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <iostream>
+#include <chrono>
+#include <ctime>
+
 #include "csv_node.h"
 
 using namespace std;
@@ -15,6 +18,7 @@ private:
 	unordered_map<string, csv_node> _nodes;
 
 public:
+	int Size();
 	void Clear();
 	void Add(string node);
 	void Add(string parent, string node);
@@ -28,5 +32,8 @@ public:
 	vector<string> Get_Children(string node);
 	vector<string> Get_Parents(string node);
 	vector<string> Get_Contained();
+
+	unordered_map<string, double> _func_timeburn;
+	unordered_map<string, int> _func_calls;
 };
 
